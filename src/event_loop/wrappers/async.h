@@ -6,7 +6,7 @@
 namespace async {
 	namespace detail {
 		inline void prelude() {
-			EventLoop::instance().start();
+			EventLoop::instance().initialize();
 		}
 	}
 

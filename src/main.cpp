@@ -8,7 +8,7 @@ int main() {
 		std::cout << "Hello from " << result << std::endl;
 	});
 	
-	std::this_thread::sleep_for(std::chrono::seconds(100));
+	EventLoop::instance().run();
 
 	return EXIT_SUCCESS;
 }

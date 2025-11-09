@@ -13,7 +13,7 @@ struct ThreadsPool {
 	void queue(std::shared_ptr<Task> task);
 	void onComplete(TaskHandler handler);
 
-	~ThreadsPool();
+	void terminate();
 
 	private:
 		std::vector<std::thread> threads;

@@ -39,7 +39,7 @@ void ThreadsPool::onComplete(TaskHandler handler) {
 	handlers.push_back(std::move(handler));
 }
 
-ThreadsPool::~ThreadsPool() {
+void ThreadsPool::terminate() {
   running = false;
 
   for (auto &thread : threads) {

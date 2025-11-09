@@ -16,8 +16,9 @@ public:
 		return instance;
 	};
 
+  void initialize(uint8_t poolSize = 1);
+  void run();
   void push(std::shared_ptr<Task> task);
-  void start(uint8_t poolSize = 1);
   void terminate();
 
   const void operator=(EventLoop &loop) = delete;
@@ -37,7 +38,18 @@ private:
   std::thread eventLoopThread;
   ThreadsPool pool;
 
+  std::mutex workDoneMutex;
+  std::condition_variable workDoneCV;
+  std::atomic<int> pending = 0;
+  void startTask(std::shared_ptr<Task> &task);
+  void finishTask(std::shared_ptr<Task> &task);
+
   std::atomic<bool> running = true;
 
-  void run();
+  void tick();
+  bool tryToStartTask();
+  bool tryToFinishTask();
+
+  std::mutex tickMutex;
+  std::condition_variable tickCV;
 };
