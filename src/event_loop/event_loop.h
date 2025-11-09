@@ -8,7 +8,7 @@
 
 #include "tasks_types.h"
 
-struct EventLoop {
+class EventLoop {
 public:
 	static EventLoop& instance() {
 		static EventLoop instance;

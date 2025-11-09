@@ -9,23 +9,25 @@ void ThreadsPool::initialize(uint8_t count) {
   }
 }
 
-void ThreadsPool::queue(std::shared_ptr<Task> task) {
-	mutex.lock();
-	_queue.push_back(task);
-	mutex.unlock();
+void ThreadsPool::schedule(std::shared_ptr<Task> task) {
+	std::lock_guard<std::mutex> lock(mutex);
+	queue.push_back(task);
+	newTaskCV.notify_one();
 }
 
 void ThreadsPool::run() {
 		while (running) {
-			mutex.lock();
-			if (_queue.empty()) {
-				mutex.unlock();
-				
+			std::unique_lock<std::mutex> lock(mutex);
+			if (queue.empty()) {
+				newTaskCV.wait_for(lock, std::chrono::milliseconds(100));
+
 				continue;
 			}
-			std::shared_ptr<Task> task = _queue.front();
-			_queue.pop_front();
-			mutex.unlock();
+
+			std::shared_ptr<Task> task = queue.front();
+			queue.pop_front();
+			
+			lock.unlock();
 
 			task->execute();
 
@@ -41,6 +43,8 @@ void ThreadsPool::onComplete(TaskHandler handler) {
 
 void ThreadsPool::terminate() {
   running = false;
+
+	newTaskCV.notify_all();
 
   for (auto &thread : threads) {
     if (thread.joinable()) {

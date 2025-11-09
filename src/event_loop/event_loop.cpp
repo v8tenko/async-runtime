@@ -11,7 +11,7 @@ void EventLoop::initialize(uint8_t poolSize) {
   pool.initialize(poolSize);
   pool.onComplete([this](shared_ptr<Task> task) {
     std::lock_guard<std::mutex> lock(resultMutex);
-    result.emplace(task->priority, std::move(task));
+    result.push(std::move(task));
     tickCV.notify_one();
   });
 }
@@ -42,7 +42,7 @@ void EventLoop::push(std::shared_ptr<Task> task) {
   std::lock_guard<std::mutex> lock(queueMutex);
 
   pending.fetch_add(1);
-  queue.emplace(task->priority, std::move(task));
+  queue.push(std::move(task));
   tickCV.notify_one();
 }
 
@@ -52,9 +52,8 @@ bool EventLoop::tryToStartTask() {
     return false;
   }
 
-  auto it = queue.begin();
-  std::shared_ptr<Task> task = std::move(it->second);
-  queue.erase(it);
+  std::shared_ptr<Task> task = queue.top();
+  queue.pop();
 
   lock.unlock();
 
@@ -69,9 +68,8 @@ bool EventLoop::tryToFinishTask() {
     return false;
   }
 
-  auto it = result.begin();
-  std::shared_ptr<Task> task = std::move(it->second);
-  result.erase(it);
+  std::shared_ptr<Task> task = result.top();
+  result.pop();
 
   finishTask(task);
 
@@ -79,7 +77,7 @@ bool EventLoop::tryToFinishTask() {
 }
 
 void EventLoop::startTask(std::shared_ptr<Task> &task) {
-  pool.queue(task);
+  pool.schedule(task);
 }
 
 void EventLoop::finishTask(std::shared_ptr<Task> &task) {
@@ -94,7 +92,9 @@ void EventLoop::finishTask(std::shared_ptr<Task> &task) {
 void EventLoop::terminate() {
   running = false;
   
-  workDoneCV.notify_all();
+  workDoneCV.notify_one();
+  tickCV.notify_one();
+
   if (eventLoopThread.joinable()) {
     eventLoopThread.join();
   }

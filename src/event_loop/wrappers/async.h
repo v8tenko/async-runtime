@@ -6,9 +6,17 @@
 namespace async {
 	namespace detail {
 		inline void prelude() {
-			EventLoop::instance().initialize();
+			static bool initialized = false;
+
+			if (initialized) {
+				return;
+			}
+
+			initialized = true;
+			EventLoop::instance().initialize(5);
 		}
 	}
 
-	void readFile(const std::string& path, std::function<void(std::string)> cb);
+	void readFile(std::string path, std::function<void(std::string)> cb);
+	void run(std::function<void()> cb);
 };
