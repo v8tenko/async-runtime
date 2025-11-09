@@ -1,0 +1,14 @@
+.vscode
+build
+CMakeUserPresets.json
+CMakeCache.txt
+CmakeFiles
+cmake_install.cmake
+Makefile
+_deps
+bin
+lib
+Testing
+CTestTestfile.cmake
+compile_commands.json
+.cache
