@@ -7,22 +7,25 @@
 
 #include "../tasks_types.h"
 
-struct ThreadsPool {
-	void initialize(uint8_t count);
+class ThreadsPool {
+public:
+  void initialize(uint8_t count);
 
-	void queue(std::shared_ptr<Task> task);
-	void onComplete(TaskHandler handler);
+  void schedule(std::shared_ptr<Task> task);
+  void onComplete(TaskHandler handler);
 
-	~ThreadsPool();
+  void terminate();
 
-	private:
-		std::vector<std::thread> threads;
-		std::vector<TaskHandler> handlers;
+private:
+  std::atomic<bool> running = true;
 
-		std::mutex mutex;
-		std::deque<std::shared_ptr<Task>> _queue;
+  std::vector<std::thread> threads;
+  std::vector<TaskHandler> handlers;
 
-		std::atomic<bool> running = true;
+  std::mutex mutex;
+  std::deque<std::shared_ptr<Task>> queue;
 
-		void run();
+  std::condition_variable newTaskCV;
+
+  void run();
 };
