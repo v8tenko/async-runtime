@@ -1,4 +1,5 @@
 #include "threads_pool.h"
+#include <iostream>
 
 void ThreadsPool::initialize(uint8_t count) {
   threads = std::vector<std::thread>();

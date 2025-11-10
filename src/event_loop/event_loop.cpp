@@ -1,3 +1,4 @@
+#include <iostream>
 #include <thread>
 
 #include "event_loop.h"
@@ -19,7 +20,6 @@ void EventLoop::initialize(uint8_t poolSize) {
 void EventLoop::run() {
   std::unique_lock<std::mutex> lock(workDoneMutex);
   workDoneCV.wait(lock, [this] { return pending.load() == 0; });
-  terminate();
 }
 
 void EventLoop::tick() {
@@ -100,4 +100,8 @@ void EventLoop::terminate() {
   }
 
   pool.terminate();
+}
+
+EventLoop::~EventLoop() {
+  terminate();
 }

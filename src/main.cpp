@@ -1,24 +1,36 @@
 #include <iostream>
 
-#include "event_loop/wrappers/async.h"
-
+#include "event_loop/runtime/runtime.h"
 
 int main() {
-	async::readFile(".gitignore", [](std::string result) {
-		std::this_thread::sleep_for(std::chrono::seconds(1));
-		std::cout << "Hello from " << result << std::endl;
-	});
+  AsyncRuntime runtime;
 
-	async::run([] {
-		while (true) {
-			std::this_thread::sleep_for(std::chrono::milliseconds(330));
-			std::cout << "Hello from thread " << std::this_thread::get_id() << std::endl;
-		}
-	});
+  runtime.readFile(".gitignore", [](std::string result) {
+    std::this_thread::sleep_for(std::chrono::seconds(1));
+    std::cout << "Hello from " << result.length() << std::endl;
+  });
 
-	std::cout << "First!" << std::endl;
-	
-	EventLoop::instance().run();
+  runtime.run([] {
+    std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+    std::cout << "Hello from thread " << std::this_thread::get_id()
+              << std::endl;
+  });
 
-	return EXIT_SUCCESS;
+  std::cout << "First!" << std::endl;
+
+  runtime.blockOn();
+
+  std::cout << "Tasks completed" << std::endl;
+
+  runtime.run([] {
+    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    std::cout << "Hello from thread 2 " << std::this_thread::get_id()
+              << std::endl;
+  });
+
+  std::cout << "Task spawned" << std::endl;
+
+  runtime.blockOn();
+
+  return EXIT_SUCCESS;
 }

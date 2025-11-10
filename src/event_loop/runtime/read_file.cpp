@@ -1,13 +1,11 @@
 #include <string>
 
 #include "../task/read_file/read_file_task.h"
-#include "./async.h"
+#include "./runtime.h"
 
-void async::readFile(std::string path, std::function<void(std::string)> cb) {
-  async::detail::prelude();
-
+void AsyncRuntime::readFile(std::string path, std::function<void(std::string)> cb) {
   std::shared_ptr<ReadFileTask> task =
       std::make_shared<ReadFileTask>(std::move(path), std::move(cb));
 
-  EventLoop::instance().push(std::move(task));
+  loop.push(std::move(task));
 }

@@ -10,12 +10,6 @@
 
 class EventLoop {
 public:
-	static EventLoop& instance() {
-		static EventLoop instance;
-
-		return instance;
-	};
-
   void initialize(uint8_t poolSize = 1);
   void run();
   void push(std::shared_ptr<Task> task);
@@ -24,9 +18,9 @@ public:
   const void operator=(EventLoop &loop) = delete;
   const void operator=(EventLoop &&loop) = delete;
 
-protected:
-	EventLoop() = default;
+  ~EventLoop();
 
+protected:
   std::mutex queueMutex;
   TaskQueue queue;
   std::mutex resultMutex;
