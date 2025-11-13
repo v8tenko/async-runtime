@@ -1,0 +1,10 @@
+repos:
+  - repo: local
+    hooks:
+      - id: format
+        name: Format C++ code
+        entry: bash -c 'scripts/format.sh && git add -u'
+        language: system
+        pass_filenames: false
+        always_run: true
+        stages: [pre-commit]

@@ -9,9 +9,9 @@ void ThreadsPool::initialize(uint8_t count) {
   }
 }
 
-void ThreadsPool::schedule(std::shared_ptr<BaseTask> task) {
+void ThreadsPool::schedule(std::unique_ptr<BaseTask> task) {
   std::lock_guard<std::mutex> lock(mutex);
-  queue.push_back(task);
+  queue.push_back(std::move(task));
   newTaskCV.notify_one();
 }
 
@@ -24,27 +24,26 @@ void ThreadsPool::tick() {
       continue;
     }
 
-    std::shared_ptr<BaseTask> task = queue.front();
+    std::unique_ptr<BaseTask> task = std::move(queue.front());
     queue.pop_front();
 
     lock.unlock();
 
-    runTask(task);
+    runTask(std::move(task));
   }
 }
 
-void ThreadsPool::runTask(std::shared_ptr<BaseTask> task) {
-  try {
-    task->state = TaskState::PENDING;
-    task->execute();
+void ThreadsPool::runTask(std::unique_ptr<BaseTask> task) {
+  task->state = TaskState::PENDING;
 
-    task->state = TaskState::COMPLETED;
+  try {
+    task->execute();
+    task->onComplete();
   } catch (const std::exception &error) {
     task->onError(error.what());
-    task->state = TaskState::FAILED;
   }
 
-  $complete.trigger(task);
+  $complete.trigger(std::move(task));
 }
 
 void ThreadsPool::terminate() {

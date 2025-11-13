@@ -9,12 +9,13 @@
 enum class TaskState { PENDING, RUNNING, COMPLETED, FAILED };
 
 template <typename Result = std::any>
-using Callback = std::function<void(std::optional<std::string>, std::optional<Result>)>;
+using Callback =
+    std::function<void(std::optional<std::string>, std::optional<Result>)>;
 
 class BaseTask {
 public:
   BaseTask(uint8_t priority) : priority(priority) {}
-  ~BaseTask() = default;
+  virtual ~BaseTask() = default;
 
   TaskState state = TaskState::PENDING;
   uint8_t priority;
@@ -27,7 +28,8 @@ public:
 
 protected:
   std::optional<std::string> error;
-  virtual void onError(const std::string& error) = 0;
+  virtual void onError(const std::string &error) = 0;
+  virtual void onComplete() = 0;
 
   virtual void finish() = 0;
 
@@ -43,9 +45,12 @@ public:
 protected:
   std::optional<Callback<Result>> callback;
   std::optional<Result> value;
-  
-  void onError(const std::string& _error) override {
+
+  void onComplete() override { state = TaskState::COMPLETED; }
+
+  void onError(const std::string &_error) override {
     error = std::make_optional<std::string>(_error);
+    state = TaskState::FAILED;
   }
 
   void finish() override {
