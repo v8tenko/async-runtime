@@ -1,0 +1,4 @@
+template <typename Result>
+class Promise {
+	
+};

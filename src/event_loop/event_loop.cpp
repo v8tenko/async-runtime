@@ -1,16 +1,13 @@
-#include <iostream>
 #include <thread>
 
 #include "event_loop.h"
 #include "task/task.h"
 
-using std::shared_ptr;
-
 void EventLoop::initialize(uint8_t poolSize) {
   eventLoopThread = std::thread(&EventLoop::tick, this);
 
   pool.initialize(poolSize);
-  pool.onComplete([this](shared_ptr<Task> task) {
+  pool.$complete.subscribe([this](std::shared_ptr<BaseTask> task) {
     std::lock_guard<std::mutex> lock(resultMutex);
     result.push(std::move(task));
     tickCV.notify_one();
@@ -37,8 +34,7 @@ void EventLoop::tick() {
   }
 }
 
-
-void EventLoop::push(std::shared_ptr<Task> task) {
+void EventLoop::push(std::shared_ptr<BaseTask> task) {
   std::lock_guard<std::mutex> lock(queueMutex);
 
   pending.fetch_add(1);
@@ -52,7 +48,7 @@ bool EventLoop::tryToStartTask() {
     return false;
   }
 
-  std::shared_ptr<Task> task = queue.top();
+  std::shared_ptr<BaseTask> task = queue.top();
   queue.pop();
 
   lock.unlock();
@@ -68,20 +64,21 @@ bool EventLoop::tryToFinishTask() {
     return false;
   }
 
-  std::shared_ptr<Task> task = result.top();
+  std::shared_ptr<BaseTask> task = result.top();
   result.pop();
 
   finishTask(task);
 
+  lock.unlock();
+
   return true;
 }
 
-void EventLoop::startTask(std::shared_ptr<Task> &task) {
-  pool.schedule(task);
-}
+void EventLoop::startTask(std::shared_ptr<BaseTask> &task) { pool.schedule(task); }
 
-void EventLoop::finishTask(std::shared_ptr<Task> &task) {
-  task->complete();
+void EventLoop::finishTask(std::shared_ptr<BaseTask> &task) {
+  task->finish();
+  
   int old = pending.fetch_sub(1);
 
   if (old == 1) {
@@ -91,7 +88,7 @@ void EventLoop::finishTask(std::shared_ptr<Task> &task) {
 
 void EventLoop::terminate() {
   running = false;
-  
+
   workDoneCV.notify_one();
   tickCV.notify_one();
 
@@ -102,6 +99,4 @@ void EventLoop::terminate() {
   pool.terminate();
 }
 
-EventLoop::~EventLoop() {
-  terminate();
-}
+EventLoop::~EventLoop() { terminate(); }

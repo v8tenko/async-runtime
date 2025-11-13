@@ -1,10 +1,11 @@
 #include <functional>
+#include <variant>
 
 #include "../task.h"
 
-class RunTask : public Task {
+class RunTask : public Task<std::monostate> {
 public:
-  RunTask(std::function<void()> cb, uint8_t priority = 1);
+  RunTask(std::function<void()> run, uint8_t priority = 1);
 
   void execute() override;
 	void cleanup() override;
@@ -12,8 +13,5 @@ public:
   std::string toString() const override;
 
 private:
-  std::function<void()> cb;
-
-protected:
-  void complete() override;
+  std::function<void()> run;
 };
