@@ -5,17 +5,13 @@
 
 class AsyncRuntime {
 public:
-	AsyncRuntime(uint8_t poolSize = 1) {
-		loop.initialize(poolSize);
-	};
+  AsyncRuntime(uint8_t poolSize = 1) { loop.initialize(poolSize); };
 
-	void blockOn() {
-		loop.run();
-	}
+  void blockOn() { loop.run(); }
 
   void readFile(std::string path, Callback<std::string> cb);
-  void run(std::function<void()> cb);
+  void launch(std::function<void()> cb);
 
 private:
-	EventLoop loop;
+  EventLoop loop;
 };

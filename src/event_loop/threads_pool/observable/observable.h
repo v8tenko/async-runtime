@@ -1,26 +1,26 @@
 #include <functional>
 #include <shared_mutex>
 
-template <typename Value>
-using Listener = std::function<void(Value)>;
+template <typename Value> using Listener = std::function<void(Value)>;
 
-template <typename Value>
-class Observable {
-	public:
-		void subscribe(Listener<Value> handler) {
-    	std::shared_lock<std::shared_mutex> lock(mutex);
-			
-			listeners.push_back(std::move(handler));
-		};
+template <typename Value> class Observable {
+public:
+  void subscribe(Listener<Value> handler) {
+    std::lock_guard<std::shared_mutex> lock(mutex);
 
-		void trigger(const Value& value) const {
-    	std::shared_lock<std::shared_mutex> lock(mutex);
-			
-			for (const auto& listener: listeners) {
-				listener(value);
-			}
-		}
-	private:
-		std::vector<Listener<Value>> listeners;
-		mutable std::shared_mutex mutex;
+    listener = std::make_optional(handler);
+  };
+
+  void trigger(Value value) const {
+    std::shared_lock<std::shared_mutex> lock(mutex);
+    if (!listener.has_value()) {
+      return;
+    }
+
+    listener.value()(std::move(value));
+  }
+
+private:
+  std::optional<std::function<void(Value)>> listener;
+  mutable std::shared_mutex mutex;
 };

@@ -7,7 +7,7 @@ void EventLoop::initialize(uint8_t poolSize) {
   eventLoopThread = std::thread(&EventLoop::tick, this);
 
   pool.initialize(poolSize);
-  pool.$complete.subscribe([this](std::shared_ptr<BaseTask> task) {
+  pool.$complete.subscribe([this](std::unique_ptr<BaseTask> task) {
     std::lock_guard<std::mutex> lock(resultMutex);
     result.push(std::move(task));
     tickCV.notify_one();
@@ -34,7 +34,7 @@ void EventLoop::tick() {
   }
 }
 
-void EventLoop::push(std::shared_ptr<BaseTask> task) {
+void EventLoop::push(std::unique_ptr<BaseTask> task) {
   std::lock_guard<std::mutex> lock(queueMutex);
 
   pending.fetch_add(1);
@@ -48,12 +48,13 @@ bool EventLoop::tryToStartTask() {
     return false;
   }
 
-  std::shared_ptr<BaseTask> task = queue.top();
+  // Hack to make const reference mutable to preserve coping
+  auto task = std::move(const_cast<std::unique_ptr<BaseTask> &>(queue.top()));
   queue.pop();
 
   lock.unlock();
 
-  startTask(task);
+  startTask(std::move(task));
 
   return true;
 }
@@ -64,21 +65,23 @@ bool EventLoop::tryToFinishTask() {
     return false;
   }
 
-  std::shared_ptr<BaseTask> task = result.top();
+  auto task = std::move(const_cast<std::unique_ptr<BaseTask> &>(result.top()));
   result.pop();
 
-  finishTask(task);
-
   lock.unlock();
+
+  finishTask(std::move(task));
 
   return true;
 }
 
-void EventLoop::startTask(std::shared_ptr<BaseTask> &task) { pool.schedule(task); }
+void EventLoop::startTask(std::unique_ptr<BaseTask> task) {
+  pool.schedule(std::move(task));
+}
 
-void EventLoop::finishTask(std::shared_ptr<BaseTask> &task) {
+void EventLoop::finishTask(std::unique_ptr<BaseTask> task) {
   task->finish();
-  
+
   int old = pending.fetch_sub(1);
 
   if (old == 1) {

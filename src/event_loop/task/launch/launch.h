@@ -3,7 +3,7 @@
 
 #include "../task.h"
 
-template <typename Result> class RunTask : public Task<std::monostate> {
+class RunTask : public Task<std::monostate> {
 public:
   RunTask(std::function<void()> run, uint8_t priority = 1);
 

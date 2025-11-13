@@ -4,8 +4,8 @@
 #include "./runtime.h"
 
 void AsyncRuntime::readFile(std::string path, Callback<std::string> cb) {
-  std::shared_ptr<ReadFileTask> task =
-      std::make_shared<ReadFileTask>(std::move(path), std::move(cb));
+  std::unique_ptr<ReadFileTask> task =
+      std::make_unique<ReadFileTask>(std::move(path), std::move(cb));
 
   loop.push(std::move(task));
 }

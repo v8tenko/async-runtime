@@ -12,8 +12,8 @@ class ThreadsPool {
 public:
   void initialize(uint8_t count);
 
-  void schedule(std::shared_ptr<BaseTask> task);
-  Observable<std::shared_ptr<BaseTask>> $complete;
+  void schedule(std::unique_ptr<BaseTask> task);
+  Observable<std::unique_ptr<BaseTask>> $complete;
 
   void terminate();
 
@@ -22,10 +22,10 @@ private:
 
   std::vector<std::thread> threads;
 
-	void runTask(std::shared_ptr<BaseTask> task);
+  void runTask(std::unique_ptr<BaseTask> task);
 
   std::mutex mutex;
-  std::deque<std::shared_ptr<BaseTask>> queue;
+  std::deque<std::unique_ptr<BaseTask>> queue;
 
   std::condition_variable newTaskCV;
 

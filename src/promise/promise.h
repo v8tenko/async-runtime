@@ -1,4 +1,1 @@
-template <typename Result>
-class Promise {
-	
-};
+template <typename Result> class Promise {};
