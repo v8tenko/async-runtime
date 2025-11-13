@@ -1,7 +1,7 @@
-#include <functional>
 #include <string>
 
 #include "../event_loop.h"
+#include "../task/task.h"
 
 class AsyncRuntime {
 public:
@@ -13,7 +13,7 @@ public:
 		loop.run();
 	}
 
-  void readFile(std::string path, std::function<void(std::string)> cb);
+  void readFile(std::string path, Callback<std::string> cb);
   void run(std::function<void()> cb);
 
 private:

@@ -12,11 +12,11 @@ class EventLoop {
 public:
   void initialize(uint8_t poolSize = 1);
   void run();
-  void push(std::shared_ptr<Task> task);
+  void push(std::shared_ptr<BaseTask> task);
   void terminate();
 
-  const void operator=(EventLoop &loop) = delete;
-  const void operator=(EventLoop &&loop) = delete;
+  void operator=(EventLoop &loop) = delete;
+  void operator=(EventLoop &&loop) = delete;
 
   ~EventLoop();
 
@@ -35,8 +35,8 @@ private:
   std::mutex workDoneMutex;
   std::condition_variable workDoneCV;
   std::atomic<int> pending = 0;
-  void startTask(std::shared_ptr<Task> &task);
-  void finishTask(std::shared_ptr<Task> &task);
+  void startTask(std::shared_ptr<BaseTask> &task);
+  void finishTask(std::shared_ptr<BaseTask> &task);
 
   std::atomic<bool> running = true;
 
