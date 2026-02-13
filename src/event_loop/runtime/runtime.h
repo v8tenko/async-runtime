@@ -1,4 +1,5 @@
 #include <string>
+#include <thread>
 
 #include "../event_loop.h"
 #include "../task/task.h"
@@ -9,8 +10,10 @@ public:
 
   void blockOn() { loop.run(); }
 
-  void readFile(std::string path, Callback<std::string> cb);
-  void launch(std::function<void()> cb);
+  TaskHandle readFile(std::string path, Callback<std::string> cb);
+  TaskHandle launch(std::function<void()> cb);
+
+  std::thread::id loopThreadId() const { return loop.threadId(); }
 
 private:
   EventLoop loop;
