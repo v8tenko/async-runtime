@@ -141,9 +141,9 @@ sequenceDiagram
   RT->>L: push(task)
   L->>P: schedule(task)
   P->>P: task.execute()
-  P-->>L: $complete(task)
-  L->>L: task.finish() (callback)
-  L->>L: task.cleanup(); markDone()
+  P-->>L: complete(task)
+  L->>L: task.finish() -> user callback
+  L->>L: task.cleanup() and markDone()
   U->>RT: blockOn()
   RT->>L: wait pending==0
 ```
