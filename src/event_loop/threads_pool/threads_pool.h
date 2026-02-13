@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <deque>
 #include <memory>
 #include <thread>
 #include <vector>
@@ -15,6 +16,9 @@ public:
   void schedule(std::unique_ptr<BaseTask> task);
   Observable<std::unique_ptr<BaseTask>> $complete;
 
+  void requestStop();
+  std::deque<std::unique_ptr<BaseTask>> stealQueued();
+  void join();
   void terminate();
 
 private:

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <condition_variable>
 #include <memory>
 #include <thread>
 
@@ -14,6 +15,8 @@ public:
   void run();
   void push(std::unique_ptr<BaseTask> task);
   void terminate();
+
+  std::thread::id threadId() const { return loopThreadId; }
 
   void operator=(EventLoop &loop) = delete;
   void operator=(EventLoop &&loop) = delete;
@@ -32,6 +35,11 @@ private:
   std::thread eventLoopThread;
   ThreadsPool pool;
 
+  std::thread::id loopThreadId;
+  std::mutex loopThreadIdMutex;
+  std::condition_variable loopThreadIdCV;
+  bool loopThreadIdReady = false;
+
   std::mutex workDoneMutex;
   std::condition_variable workDoneCV;
   std::atomic<int> pending = 0;
@@ -39,6 +47,7 @@ private:
   void finishTask(std::unique_ptr<BaseTask> task);
 
   std::atomic<bool> running = true;
+  std::atomic<bool> stopping = false;
 
   void tick();
   bool tryToStartTask();

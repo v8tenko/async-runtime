@@ -1,5 +1,8 @@
 #include "threads_pool.h"
 
+#include <chrono>
+#include <utility>
+
 void ThreadsPool::initialize(uint8_t count) {
   threads = std::vector<std::thread>();
   threads.reserve(count);
@@ -16,11 +19,17 @@ void ThreadsPool::schedule(std::unique_ptr<BaseTask> task) {
 }
 
 void ThreadsPool::tick() {
-  while (running) {
+  while (true) {
     std::unique_lock<std::mutex> lock(mutex);
-    if (queue.empty()) {
-      newTaskCV.wait_for(lock, std::chrono::milliseconds(100));
 
+    newTaskCV.wait_for(lock, std::chrono::milliseconds(100),
+                       [this] { return !queue.empty() || !running.load(); });
+
+    if (!running.load() && queue.empty()) {
+      return;
+    }
+
+    if (queue.empty()) {
       continue;
     }
 
@@ -34,26 +43,44 @@ void ThreadsPool::tick() {
 }
 
 void ThreadsPool::runTask(std::unique_ptr<BaseTask> task) {
-  task->state = TaskState::PENDING;
-
   try {
-    task->execute();
-    task->onComplete();
+    if (task->isCancelRequested()) {
+      task->markCancelled();
+    } else {
+      task->state = TaskState::RUNNING;
+      task->execute();
+      task->onComplete();
+    }
   } catch (const std::exception &error) {
     task->onError(error.what());
+  } catch (...) {
+    task->onError("Unknown error");
   }
 
   $complete.trigger(std::move(task));
 }
 
-void ThreadsPool::terminate() {
+void ThreadsPool::requestStop() {
   running = false;
-
   newTaskCV.notify_all();
+}
 
+std::deque<std::unique_ptr<BaseTask>> ThreadsPool::stealQueued() {
+  std::lock_guard<std::mutex> lock(mutex);
+  std::deque<std::unique_ptr<BaseTask>> out;
+  out.swap(queue);
+  return out;
+}
+
+void ThreadsPool::join() {
   for (auto &thread : threads) {
     if (thread.joinable()) {
       thread.join();
     }
   }
+}
+
+void ThreadsPool::terminate() {
+  requestStop();
+  join();
 }
